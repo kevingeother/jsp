@@ -27,14 +27,15 @@ class Instance:
         self.jobs = jobs
         self.machineCapability = machineCapability
         self.dur = [[d[1]/cap for d in self.jobs] for cap in machineCapability]
-        for dur in self.dur:
-            debug(dur)
         self.n = len(jobs) # number of jobs
         self.m = m         # number of machines
 
     # I[0] => I.jobs[0]
     def __getitem__(self, i):
         return self.jobs[i]
+
+    def getDuration(self, machine, i):
+        return self.dur[machine][i]
 
     # len(I) => len(I.jobs)
     def __len__(self):
@@ -47,11 +48,11 @@ def LoadInstance(fname):
     # n is the no of jobs, m is the no of machins. 
     n, m = int(head[0]), int(head[1])
     I = []
-    lineNo = 0
-    machineCapability = []
+    l = f.readline()
+    l = l.split()
+    machineCapability = [float(k) for k in l]
     for l in f:
         l = l.split()
-        if len(l) < 3: continue
         # Change to l[0] and count to 1, to make it into jobs and i[-1] to append
         ntasks = 1
         I.append([])
@@ -67,13 +68,6 @@ def LoadInstance(fname):
                 res.append(l[count])
                 count+=1
             I[-1]=(mid, dur, res)
-        lineNo+=1
-        if(lineNo>=n):
-            break
-    for l in f:
-        l = l.split()
-        machineCapability = [float(k) for k in l]
-    print machineCapability
     return Instance(I, m, machineCapability)
     # Final array is of type
     # [[-->Job 0 tasks<---(mid, dur), (mid, dur)][..][..]]
@@ -92,9 +86,9 @@ def ComputeDAG(s, I):
     tasks_resource = [[-1 for j in xrange(I.n)] for m in xrange(I.m)]
     for i in xrange(len(s)):
         j = s[i]
-        # Machine id of the task t
         t = T[j]
 
+        # Machine id of the task t
         r = I[j][0]
         file_resource[i] = [res for res in I[j][2]]
         # If this is the final task of a job, add edge to the final node
@@ -240,5 +234,4 @@ seed(SEED)
 I = LoadInstance(argv[-1])
 (ts, g) = Genetic(I, ps=PS, mit=IT, pc=CP, pm=MP)
 C = ComputeStartTimes(g, I)
-print g
 print ts, FormatSolution(g, C, I)
