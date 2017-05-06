@@ -59,7 +59,7 @@ def LoadInstance(fname):
         for j in xrange(ntasks):
             # machine id and duration is appended to the array
             mid = int(l[count])
-            dur = int(l[count+1])
+            dur = float(l[count+1])
             resLen = int(l[count+2])
             count+=3
             res = []
@@ -126,13 +126,10 @@ def ComputeStartTimes(s, I):
     return C
 
 def FormatSolution(s, C, I):
-    T = [0 for j in xrange(I.n)]
-    S = [[0 for t in I[j]] for j in xrange(I.n)]
+    S = [0 for j in xrange(I.n)]
     for i in xrange(len(s)):
         j = s[i]
-        t = T[j]
-        S[j][t] = C[i]
-        T[j] = T[j] + 1
+        S[j] = C[i]
     return S
 
 def Genetic(I, ps = PS, pc = CP, pm = MP, mit = IT):
