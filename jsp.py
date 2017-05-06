@@ -7,9 +7,13 @@ from sys import argv
 
 # DEFAULT PARAMETERS
 SEED = 0
+# Population size
 PS = 1000
+# no of iterations/Generations
 IT = 50
+# Crossover probability
 CP = 1.0
+# Mutation probability
 MP = 0.05
 
 class Instance:
@@ -19,9 +23,11 @@ class Instance:
         self.n = len(jobs) # number of jobs
         self.m = m         # number of machines
 
+    # I[0] => I.jobs[0]
     def __getitem__(self, i):
         return self.jobs[i]
 
+    # len(I) => len(I.jobs)
     def __len__(self):
         return len(self.jobs)
 
@@ -29,6 +35,7 @@ def LoadInstance(fname):
     """Load instance file."""
     f = open(fname, 'r')
     head = f.readline().split()
+    # n is the no of jobs, m is the no of machins. 
     n, m = int(head[0]), int(head[1])
     I = []
     for l in f:
@@ -36,37 +43,54 @@ def LoadInstance(fname):
         if len(l) < 3: continue
         ntasks = int(l[0])
         I.append([])
+        count = 1
         for j in xrange(ntasks):
-            mid = int(l[j*2+1])
-            dur = int(l[j*2+2])
-            I[-1].append((mid, dur))
+            # machine id and duration is appended to the array
+            mid = int(l[count])
+            dur = int(l[count+1])
+            resLen = int(l[count+2])
+            count+=3
+            res = []
+            for k in xrange(resLen):
+                res.append(l[count])
+                count+=1
+            I[-1].append((mid, dur, res))
     return Instance(I, m)
+    # Final array is of type
+    # [[-->Job 0 tasks<---(mid, dur), (mid, dur)][..][..]]
 
 def ComputeDAG(s, I):
     """Compute the DAG representing a solution from a chromosome
     (topological ordering of the DAG)."""
     G = []
-    for t in s: G.append([])
+    resList = []
+    for t in s: 
+        G.append([])
+        resList.append([])
     G.append([])
     T = [0 for j in xrange(I.n)]
     last_task_job = [-1 for j in xrange(I.n)]
     tasks_resource = [[-1 for j in xrange(I.n)] for m in xrange(I.m)]
+    file_resource = [[] for j in xrange(I.n) for m in xrange(I.m)]
     st = [] # Returns for each task, its id within a job
     for i in xrange(len(s)):
         j = s[i]
+        #  t = task id
         t = T[j]
         st.append(t)
+        # Machine id of the task t
         r = I[j][t][0]
         # If this is the final task of a job, add edge to the final node
         if t + 1 == len(I[j]): G[-1].append(i)
         # Wait for the previous task of the job
         if t > 0: G[i].append(last_task_job[j])
         # Wait for the last task from other jobs using the same resource
-        G[i].extend([tasks_resource[r][j2] for j2 in xrange(I.n)
-                     if j2 != j and tasks_resource[r][j2] > -1])
+        G[i].extend([tasks_resource[r][j2] for j2 in xrange(I.n) if j2 != j and tasks_resource[r][j2] != -1])
         T[j] = T[j] + 1
         last_task_job[j] = i
         tasks_resource[r][j] = i
+        file_resource[r][j] = [res for res in I[j][t][2]]
+
     return G, st
 
 def ComputeStartTimes(s, I):
@@ -91,17 +115,21 @@ def FormatSolution(s, C, I):
     return S
 
 def Genetic(I, ps = PS, pc = CP, pm = MP, mit = IT):
+    # Get ps variations of job id * taks no
     def InitPopulation(ps, I):
         """Generate initial population from random shuffles of the tasks."""
         gene = [j for j in xrange(I.n) for t in I[j]]
         population = []
+        # Shuffle 00000 11111 22222
         for i in xrange(ps):
             shuffle(gene)
             population.append([j for j in gene])
         return population
+
     def Crossover(p1, p2, I):
         """Crossover operation for the GA. Generalized Order Crossover (GOX)."""
         def Index(p1, I):
+            # Convertd jobs to (jobs, tasks)
             ct = [0 for j in xrange(I.n)]
             s = []
             for i in p1:
@@ -115,7 +143,6 @@ def Genetic(I, ps = PS, pc = CP, pm = MP, mit = IT):
         j = randint(0, nt-1)
         k = randint(0, nt)
         implant = idx_p1[j:min(j+i,nt)] + idx_p1[:i - min(j+i,nt) + j]
-
         lft_child = idx_p2[:k]
         rgt_child = idx_p2[k:]
         for jt in implant:
@@ -133,6 +160,7 @@ def Genetic(I, ps = PS, pc = CP, pm = MP, mit = IT):
         m[i], m[j] = m[j], m[i]
         return m
 
+    # Start times, for the dag is found and the max (end node) is found. For each chromosome
     pop = [(ComputeStartTimes(g, I)[-1], g) for g in InitPopulation(ps, I)]
     for it in xrange(1, mit+1):
         # Random ordering of the population
@@ -190,7 +218,9 @@ while i < len(argv) - 1:
     i = i + 2
 
 seed(SEED)
+# I is the array from the result of loading file
 I = LoadInstance(argv[-1])
 (ts, g) = Genetic(I, ps=PS, mit=IT, pc=CP, pm=MP)
 C = ComputeStartTimes(g, I)
+print C
 print ts, FormatSolution(g, C, I)
