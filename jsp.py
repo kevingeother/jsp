@@ -63,15 +63,14 @@ def ComputeDAG(s, I):
     """Compute the DAG representing a solution from a chromosome
     (topological ordering of the DAG)."""
     G = []
-    resList = []
+    file_resource = []
     for t in s: 
         G.append([])
-        resList.append([])
+        file_resource.append([])
     G.append([])
     T = [0 for j in xrange(I.n)]
     last_task_job = [-1 for j in xrange(I.n)]
     tasks_resource = [[-1 for j in xrange(I.n)] for m in xrange(I.m)]
-    file_resource = [[] for j in xrange(I.n) for m in xrange(I.m)]
     st = [] # Returns for each task, its id within a job
     for i in xrange(len(s)):
         j = s[i]
@@ -80,6 +79,7 @@ def ComputeDAG(s, I):
         st.append(t)
         # Machine id of the task t
         r = I[j][t][0]
+        file_resource[i] = [res for res in I[j][t][2]]
         # If this is the final task of a job, add edge to the final node
         if t + 1 == len(I[j]): G[-1].append(i)
         # Wait for the previous task of the job
@@ -89,8 +89,11 @@ def ComputeDAG(s, I):
         T[j] = T[j] + 1
         last_task_job[j] = i
         tasks_resource[r][j] = i
-        file_resource[r][j] = [res for res in I[j][t][2]]
-
+        f_resource = {}
+        for k in xrange(i):
+            for res in [res for res in file_resource[i] if res in file_resource[k]]:
+                f_resource[res]=k   
+        G[i].extend([val for (key, val) in f_resource.iteritems()])
     return G, st
 
 def ComputeStartTimes(s, I):
@@ -102,6 +105,7 @@ def ComputeStartTimes(s, I):
     for i in xrange(len(G)):
         if len(G[i]) == 0: C[i] = 0
         else: C[i] = max(C[k] + I[s[k]][st[k]][1] for k in G[i])
+    print C
     return C
 
 def FormatSolution(s, C, I):
@@ -222,5 +226,5 @@ seed(SEED)
 I = LoadInstance(argv[-1])
 (ts, g) = Genetic(I, ps=PS, mit=IT, pc=CP, pm=MP)
 C = ComputeStartTimes(g, I)
-print C
+print g
 print ts, FormatSolution(g, C, I)
