@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # Author: Joan Puigcerver i Pérez <joapuipe@upv.es>
 
-from random import randint, random, seed, shuffle
+from random import randint, random, seed, shuffle, choice
 from sys import argv
 
 DEBUG=True
@@ -26,7 +26,7 @@ class Instance:
     def __init__(self, jobs, m, machineCapability):
         self.jobs = jobs
         self.machineCapability = machineCapability
-        self.dur = [[d[1]/cap for d in self.jobs] for cap in machineCapability]
+        self.dur = [[d[0]/cap for d in self.jobs] for cap in machineCapability]
         self.n = len(jobs) # number of jobs
         self.m = m         # number of machines
 
@@ -34,8 +34,8 @@ class Instance:
     def __getitem__(self, i):
         return self.jobs[i]
 
-    def getDuration(self, machine, i):
-        return self.dur[machine][i]
+    def getDuration(self, jobMachine):
+        return self.dur[jobMachine[1]][jobMachine[0]]
 
     # len(I) => len(I.jobs)
     def __len__(self):
@@ -56,21 +56,12 @@ def LoadInstance(fname):
         # Change to l[0] and count to 1, to make it into jobs and i[-1] to append
         ntasks = 1
         I.append([])
-        count = 0
         for j in xrange(ntasks):
-            # machine id and duration is appended to the array
-            mid = int(l[count])
-            dur = float(l[count+1])
-            resLen = int(l[count+2])
-            count+=3
-            res = []
-            for k in xrange(resLen):
-                res.append(l[count])
-                count+=1
-            I[-1]=(mid, dur, res)
+            # duration and resource requirement is appended to the array
+            dur = float(l[0])
+            res = l[1:]
+            I[-1]=(dur, res)
     return Instance(I, m, machineCapability)
-    # Final array is of type
-    # [[-->Job 0 tasks<---(mid, dur), (mid, dur)][..][..]]
 
 def ComputeDAG(s, I):
     """Compute the DAG representing a solution from a chromosome
@@ -81,30 +72,22 @@ def ComputeDAG(s, I):
         G.append([])
         file_resource.append([])
     G.append([])
-    T = [0 for j in xrange(I.n)]
-    last_task_job = [-1 for j in xrange(I.n)]
     tasks_resource = [[-1 for j in xrange(I.n)] for m in xrange(I.m)]
     for i in xrange(len(s)):
-        j = s[i]
-        t = T[j]
+        jobId = s[i][0]
+        machineId = s[i][1]
 
-        # Machine id of the task t
-        r = I[j][0]
-        file_resource[i] = [res for res in I[j][2]]
-        # If this is the final task of a job, add edge to the final node
-        if t + 1 == 1: G[-1].append(i)
-        # Wait for the previous task of the job
-        if t > 0: G[i].append(last_task_job[j])
+        file_resource[i] = [res for res in I[jobId][1]]
+        G[-1].append(i)
         # Wait for the last task from other jobs using the same resource
-        G[i].extend([tasks_resource[r][j2] for j2 in xrange(I.n) if j2 != j and tasks_resource[r][j2] != -1])
-        T[j] = T[j] + 1
-        last_task_job[j] = i
-        tasks_resource[r][j] = i
+        G[i].extend([tasks_resource[machineId][j2] for j2 in xrange(I.n) if j2 != jobId and tasks_resource[machineId][j2] != -1])
+        tasks_resource[machineId][jobId] = i
         f_resource = {}
         for item in [[(res,k) for res in file_resource[i] if res in file_resource[k]] for k in xrange(i)]:
             if item:
                 f_resource[item[0][0]]=item[0][1]   
         G[i].extend([val for (key, val) in f_resource.iteritems()])
+        # Remove redundancy
         G[i] = list(set(G[i]))
     return G
 
@@ -116,14 +99,14 @@ def ComputeStartTimes(s, I):
     C = [0 for t in G]
     for i in xrange(len(G)):
         if len(G[i]) == 0: C[i] = 0
-        else: C[i] = max(C[k] + I[s[k]][1] for k in G[i])
+        else: C[i] = max(C[k] + I.getDuration(s[k]) for k in G[i])
     return C
 
 def FormatSolution(s, C, I):
     S = [0 for j in xrange(I.n)]
     for i in xrange(len(s)):
-        j = s[i]
-        S[j] = C[i]
+        j = s[i][0]
+        S[j] = (j, "{0:.2f}".format(C[i]), s[i][1])
     return S
 
 def Genetic(I, ps = PS, pc = CP, pm = MP, mit = IT):
@@ -131,37 +114,36 @@ def Genetic(I, ps = PS, pc = CP, pm = MP, mit = IT):
     def InitPopulation(ps, I):
         """Generate initial population from random shuffles of the tasks."""
         gene = [j for j in xrange(I.n)]
+        machines = [choice(range(I.m)) for j in xrange(I.n)]
         population = []
-        # Shuffle 00000 11111 22222
+        # Population is a list of individuals
+        # individuals is of the form [ (jobid, machineId)]
         for i in xrange(ps):
             shuffle(gene)
-            population.append([j for j in gene])
+            machines = [choice(range(I.m)) for j in xrange(I.n)]
+            population.append([(gene[j], machines[j]) for j in xrange(I.n)])
         return population
 
     def Crossover(p1, p2, I):
         """Crossover operation for the GA. Generalized Order Crossover (GOX)."""
         def Index(p1, I):
             # Convertd jobs to (jobs, tasks)
-            ct = [0 for j in xrange(I.n)]
-            s = []
-            for i in p1:
-                s.append((i, ct[i]))
-                ct[i] = ct[i] + 1
-            return s
+            return [i+(0,) for i in p1]
         idx_p1 = Index(p1, I)
         idx_p2 = Index(p2, I)
-        nt = len(idx_p1) # total number of tasks
-        i = randint(1, nt)
-        j = randint(0, nt-1)
-        k = randint(0, nt)
-        implant = idx_p1[j:min(j+i,nt)] + idx_p1[:i - min(j+i,nt) + j]
+        # total number of tasks
+        noOfTasks = len(idx_p1) 
+        i = randint(1, noOfTasks)
+        j = randint(0, noOfTasks-1)
+        k = randint(0, noOfTasks)
+        implant = idx_p1[j:min(j+i,noOfTasks)] + idx_p1[:i - min(j+i,noOfTasks) + j]
         lft_child = idx_p2[:k]
         rgt_child = idx_p2[k:]
         for jt in implant:
             if jt in lft_child: lft_child.remove(jt)
             if jt in rgt_child: rgt_child.remove(jt)
 
-        child = [ job for (job, task) in lft_child + implant + rgt_child ]
+        child = [ (job,machine) for (job,machine, task) in lft_child + implant + rgt_child ]
         return child
     def Mutation(p):
         """Mutation operation for the GA. Swaps to genes of the chromosome."""

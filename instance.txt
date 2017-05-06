@@ -1,17 +1,17 @@
 15 5 2
 1 2 3 1 2
-1 8 1 file1
-0 41 1 file1
-2 36 1 file1
-1 3 1 file1
-0 1 1 file1
-1 12 1 file1
-0 29 1 file1
-1 44 1 file1
-3 36 1 file1
-3 37 1 file2
-2 8 1 file1
-0 45 2 file2 file1
-1 21 1 file1
-2 37 1 file1
-4 0 0
+8 file1
+41 file1
+36 file1
+3 file1
+1 file1
+12 file1
+29 file1
+44 file1
+36 file1
+37 file2
+8 file1
+45 file2 file1
+21 file1
+37 file1
+7
