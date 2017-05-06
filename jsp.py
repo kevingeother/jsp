@@ -5,6 +5,7 @@
 from random import randint, random, seed, shuffle
 from sys import argv
 
+DEBUG=True
 # DEFAULT PARAMETERS
 SEED = 0
 # Population size
@@ -16,11 +17,18 @@ CP = 1.0
 # Mutation probability
 MP = 0.05
 
+def debug(object):
+    if DEBUG:
+        print(object)
+
 class Instance:
     """Class representing an instance of the JSP."""
-    def __init__(self, jobs, m):
+    def __init__(self, jobs, m, machineCapability):
         self.jobs = jobs
-        self.dur = [dur for (jobs,dur) in self.jobs]
+        self.machineCapability = machineCapability
+        self.dur = [[d[1]/cap for d in self.jobs] for cap in machineCapability]
+        for dur in self.dur:
+            debug(dur)
         self.n = len(jobs) # number of jobs
         self.m = m         # number of machines
 
@@ -39,12 +47,15 @@ def LoadInstance(fname):
     # n is the no of jobs, m is the no of machins. 
     n, m = int(head[0]), int(head[1])
     I = []
+    lineNo = 0
+    machineCapability = []
     for l in f:
         l = l.split()
         if len(l) < 3: continue
-        ntasks = int(l[0])
+        # Change to l[0] and count to 1, to make it into jobs and i[-1] to append
+        ntasks = 1
         I.append([])
-        count = 1
+        count = 0
         for j in xrange(ntasks):
             # machine id and duration is appended to the array
             mid = int(l[count])
@@ -55,8 +66,15 @@ def LoadInstance(fname):
             for k in xrange(resLen):
                 res.append(l[count])
                 count+=1
-            I[-1].append((mid, dur, res))
-    return Instance(I, m)
+            I[-1]=(mid, dur, res)
+        lineNo+=1
+        if(lineNo>=n):
+            break
+    for l in f:
+        l = l.split()
+        machineCapability = [float(k) for k in l]
+    print machineCapability
+    return Instance(I, m, machineCapability)
     # Final array is of type
     # [[-->Job 0 tasks<---(mid, dur), (mid, dur)][..][..]]
 
@@ -72,17 +90,15 @@ def ComputeDAG(s, I):
     T = [0 for j in xrange(I.n)]
     last_task_job = [-1 for j in xrange(I.n)]
     tasks_resource = [[-1 for j in xrange(I.n)] for m in xrange(I.m)]
-    st = [] # Returns for each task, its id within a job
     for i in xrange(len(s)):
         j = s[i]
-        #  t = task id
-        t = T[j]
-        st.append(t)
         # Machine id of the task t
-        r = I[j][t][0]
-        file_resource[i] = [res for res in I[j][t][2]]
+        t = T[j]
+
+        r = I[j][0]
+        file_resource[i] = [res for res in I[j][2]]
         # If this is the final task of a job, add edge to the final node
-        if t + 1 == len(I[j]): G[-1].append(i)
+        if t + 1 == 1: G[-1].append(i)
         # Wait for the previous task of the job
         if t > 0: G[i].append(last_task_job[j])
         # Wait for the last task from other jobs using the same resource
@@ -91,22 +107,22 @@ def ComputeDAG(s, I):
         last_task_job[j] = i
         tasks_resource[r][j] = i
         f_resource = {}
-        for k in xrange(i):
-            for res in [res for res in file_resource[i] if res in file_resource[k]]:
-                f_resource[res]=k   
+        for item in [[(res,k) for res in file_resource[i] if res in file_resource[k]] for k in xrange(i)]:
+            if item:
+                f_resource[item[0][0]]=item[0][1]   
         G[i].extend([val for (key, val) in f_resource.iteritems()])
-    return G, st
+        G[i] = list(set(G[i]))
+    return G
 
 def ComputeStartTimes(s, I):
     """This computes the start time of each task encoded in a chromosome of
     the genetic algorithm. The last element of the output list is the
     timespan."""
-    G, st = ComputeDAG(s, I)
+    G= ComputeDAG(s, I)
     C = [0 for t in G]
     for i in xrange(len(G)):
         if len(G[i]) == 0: C[i] = 0
-        else: C[i] = max(C[k] + I[s[k]][st[k]][1] for k in G[i])
-    print C
+        else: C[i] = max(C[k] + I[s[k]][1] for k in G[i])
     return C
 
 def FormatSolution(s, C, I):
@@ -123,7 +139,7 @@ def Genetic(I, ps = PS, pc = CP, pm = MP, mit = IT):
     # Get ps variations of job id * taks no
     def InitPopulation(ps, I):
         """Generate initial population from random shuffles of the tasks."""
-        gene = [j for j in xrange(I.n) for t in I[j]]
+        gene = [j for j in xrange(I.n)]
         population = []
         # Shuffle 00000 11111 22222
         for i in xrange(ps):
