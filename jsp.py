@@ -20,6 +20,7 @@ class Instance:
     """Class representing an instance of the JSP."""
     def __init__(self, jobs, m):
         self.jobs = jobs
+        self.dur = [dur for (jobs,dur) in self.jobs]
         self.n = len(jobs) # number of jobs
         self.m = m         # number of machines
 
