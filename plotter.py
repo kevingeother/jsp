@@ -9,7 +9,10 @@ doOpen = True
 def getStr(machineJob, ts=0):
     if machineJob == -1:
         return "End '" + str(ts) + "'"
-    return str(machineJob[:])
+    if len(machineJob[-1]) > 0:
+        return str(machineJob)
+    else:
+        return str(machineJob[:-1])
 
 def drawDag(G, S, I, ts, s):
     A = gv.Digraph(format='png')
