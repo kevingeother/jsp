@@ -12,7 +12,7 @@ class Instance:
         return self.jobs[i]
 
     def getDuration(self, jobMachine):
-        return self.dur[jobMachine[1]][jobMachine[0]]
+        return "{0:.2f}".format(self.dur[jobMachine[1]][jobMachine[0]])
 
     # len(I) => len(I.jobs)
     def __len__(self):

@@ -6,6 +6,7 @@ import plotter
 import pickle
 from instance import *
 from sys import argv
+import plotter
 
 DEBUG=True
 # DEFAULT PARAMETERS
@@ -18,7 +19,6 @@ IT = 50
 CP = 1.0
 # Mutation probability
 MP = 0.05
-fileName = 'savedData'
 
 def debug(object):
     if DEBUG:
@@ -201,5 +201,6 @@ seed(SEED)
 I = LoadInstance(argv[-1])
 (ts, g) = Genetic(I, ps=PS, mit=IT, pc=CP, pm=MP)
 C,G = ComputeStartTimes(g, I, True)
-pickle.dump((C,G,I,g),open(fileName, 'wb'))
+plotter.drawDag(C,G,I,g)
+pickle.dump((C,G,I,g),open('savedData', 'wb'))
 print ts, FormatSolution(g, C, I)
