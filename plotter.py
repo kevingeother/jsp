@@ -15,24 +15,31 @@ def getStr(machineJob, ts=0):
         return str(machineJob[:-1])
 
 def drawDag(G, S, I, ts, s):
-    A = gv.Digraph(format='png')
+    A = gv.Digraph(format='svg')
     machines = list(set([x[2] for x in S]))
-    machineJobs = [[x for x in S if x[2] == machineId] for machineId in machines]
     file_resource = [[res for res in I[s[i][0]][1]] for i in xrange(len(s))]
     edges = []
+    machineJobs = {}
     for i in xrange(len(s)):
         for x in [k for k in range(i) for res in file_resource[i] if res in file_resource[k]]:
             edges.append((getStr(S[s[x][0]]), getStr(S[s[i][0]])))
     for i in machines:
+        machineJobs[i] = [x for x in S if x[2] == i]
         machineJobs[i].sort(key=lambda tup: tup[1])
         edges.extend([(getStr(machineJobs[i][j]), getStr(machineJobs[i][j+1])) for j in range(len(machineJobs[i])-1)])
         edges.append((getStr(machineJobs[i][-1]), getStr(-1, ts)))
+    edges = list(set(edges))
+    edges = [edge for edge in edges if edge[0] != edge[1]]
 
     for edge in edges:
         A.edge(edge[0],edge[1])
     A.render('dag')
+    print s
+    noFileS=[x[:-1] for x in S]
+    noFileS.sort(key=lambda tup: tup[1] + tup[3])
+    print [(s[0], s[1]+s[3]) for s in noFileS]
     if doOpen:
-        os.system('xdg-open dag.png')
+        os.system('xdg-open dag.svg')
 
 if __name__ == "__main__":
     # test code

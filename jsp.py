@@ -55,14 +55,12 @@ def ComputeDAG(s, I):
     for i in xrange(len(s)):
         jobId = s[i][0]
         machineId = s[i][1]
-        # FILE RESOURCE IMPLEMENTATION IS COMPLETELY WRONG
         file_resource[i] = [res for res in I[jobId][1]]
         G[-1].append(i)
         # Wait for the last task from other jobs using the same resource
         G[i].extend([tasks_resource[machineId][j2] for j2 in xrange(I.n) if j2 != jobId and tasks_resource[machineId][j2] != -1])
         tasks_resource[machineId][jobId] = i
-        for item in [k for k in range(i) for res in file_resource[i] if res in file_resource[k]]:
-            G[i].append(item)
+        G[i].extend([k for k in range(i) for res in file_resource[i] if res in file_resource[k]])
         # Remove redundancy
         G[i] = list(set(G[i]))
     return G
