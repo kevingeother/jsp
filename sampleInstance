@@ -1,0 +1,5 @@
+1 2 3 2 1               [list of machine capability of each instance as compared to one]
+5 file1                 <duration of execution in capability=1> [list of file dependencies]
+28 file2                <duration of execution in capability=1> [list of file dependencies]
+33                      <duration of execution in capability=1> [list of file dependencies]
+43 file1 file2          <duration of execution in capability=1> [list of file dependencies]

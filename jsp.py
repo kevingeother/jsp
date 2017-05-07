@@ -27,9 +27,6 @@ def debug(object):
 def LoadInstance(fname):
     """Load instance file."""
     f = open(fname, 'r')
-    head = f.readline().split()
-    # n is the no of jobs, m is the no of machins. 
-    n, m = int(head[0]), int(head[1])
     I = []
     l = f.readline()
     l = l.split()
@@ -44,7 +41,7 @@ def LoadInstance(fname):
             dur = float(l[0])
             res = l[1:]
             I[-1]=(dur, res)
-    return Instance(I, m, machineCapability)
+    return Instance(I, machineCapability)
 
 def ComputeDAG(s, I):
     """Compute the DAG representing a solution from a chromosome

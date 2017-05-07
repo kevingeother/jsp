@@ -1,11 +1,11 @@
 class Instance:
     """Class representing an instance of the JSP."""
-    def __init__(self, jobs, m, machineCapability):
+    def __init__(self, jobs, machineCapability):
         self.jobs = jobs
         self.machineCapability = machineCapability
         self.dur = [[d[0]/cap for d in self.jobs] for cap in machineCapability]
         self.n = len(jobs) # number of jobs
-        self.m = m         # number of machines
+        self.m = len(machineCapability)         # number of machines
 
     # I[0] => I.jobs[0]
     def __getitem__(self, i):
