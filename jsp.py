@@ -204,4 +204,4 @@ C,G = ComputeStartTimes(g, I, True)
 S = FormatSolution(g, C, I)
 pickle.dump((G, S, I, ts, g),open('savedData', 'wb'))
 plotter.drawDag(G, S, I, ts, g)
-print ts, S
+# print ts, S

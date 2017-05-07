@@ -3,8 +3,8 @@ import pickle
 from instance import *
 import graphviz as gv
 import os
-doOpen = False
-# doOpen = True
+# doOpen = False
+doOpen = True
 
 def getStr(machineJob, ts=0):
     if machineJob == -1:
