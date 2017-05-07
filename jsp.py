@@ -50,26 +50,22 @@ def ComputeDAG(s, I):
     """Compute the DAG representing a solution from a chromosome
     (topological ordering of the DAG)."""
     G = []
-    file_resource = []
     for t in s: 
         G.append([])
-        file_resource.append([])
     G.append([])
     tasks_resource = [[-1 for j in xrange(I.n)] for m in xrange(I.m)]
+    file_resource = [[res for res in I[s[i][0]][1]] for i in xrange(len(s))]
     for i in xrange(len(s)):
         jobId = s[i][0]
         machineId = s[i][1]
-
+        # FILE RESOURCE IMPLEMENTATION IS COMPLETELY WRONG
         file_resource[i] = [res for res in I[jobId][1]]
         G[-1].append(i)
         # Wait for the last task from other jobs using the same resource
         G[i].extend([tasks_resource[machineId][j2] for j2 in xrange(I.n) if j2 != jobId and tasks_resource[machineId][j2] != -1])
         tasks_resource[machineId][jobId] = i
-        f_resource = {}
-        for item in [[(res,k) for res in file_resource[i] if res in file_resource[k]] for k in xrange(i)]:
-            if item:
-                f_resource[item[0][0]]=item[0][1]   
-        G[i].extend([val for (key, val) in f_resource.iteritems()])
+        for item in [k for k in range(i) for res in file_resource[i] if res in file_resource[k]]:
+            G[i].append(item)
         # Remove redundancy
         G[i] = list(set(G[i]))
     return G
@@ -87,11 +83,15 @@ def ComputeStartTimes(s, I, isFinal=False):
         return C,G
     return C
 
+def decimal(floatVal):
+    return float("{0:.2f}".format(floatVal))
+
 def FormatSolution(s, C, I):
+    file_resource = [[res for res in I[s[i][0]][1]] for i in xrange(len(s))]
     S = [0 for j in xrange(I.n)]
     for i in xrange(len(s)):
         j = s[i][0]
-        S[j] = (j, "{0:.2f}".format(C[i]), s[i][1])
+        S[j] = (j, decimal(C[i]), s[i][1], decimal(I.getDuration(s[i])), file_resource[i])
     return S
 
 def Genetic(I, ps = PS, pc = CP, pm = MP, mit = IT):
@@ -202,6 +202,6 @@ I = LoadInstance(argv[-1])
 (ts, g) = Genetic(I, ps=PS, mit=IT, pc=CP, pm=MP)
 C,G = ComputeStartTimes(g, I, True)
 S = FormatSolution(g, C, I)
-pickle.dump((G, S, ts),open('savedData', 'wb'))
-plotter.drawDag(G, S, ts)
+pickle.dump((G, S, I, ts, g),open('savedData', 'wb'))
+plotter.drawDag(G, S, I, ts, g)
 print ts, S
