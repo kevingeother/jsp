@@ -1,8 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
-# Author: Joan Puigcerver i Pérez <joapuipe@upv.es>
 
 from random import randint, random, seed, shuffle, choice
+import plotter
+import pickle
+from instance import *
 from sys import argv
 
 DEBUG=True
@@ -16,30 +18,11 @@ IT = 50
 CP = 1.0
 # Mutation probability
 MP = 0.05
+fileName = 'savedData'
 
 def debug(object):
     if DEBUG:
         print(object)
-
-class Instance:
-    """Class representing an instance of the JSP."""
-    def __init__(self, jobs, m, machineCapability):
-        self.jobs = jobs
-        self.machineCapability = machineCapability
-        self.dur = [[d[0]/cap for d in self.jobs] for cap in machineCapability]
-        self.n = len(jobs) # number of jobs
-        self.m = m         # number of machines
-
-    # I[0] => I.jobs[0]
-    def __getitem__(self, i):
-        return self.jobs[i]
-
-    def getDuration(self, jobMachine):
-        return self.dur[jobMachine[1]][jobMachine[0]]
-
-    # len(I) => len(I.jobs)
-    def __len__(self):
-        return len(self.jobs)
 
 def LoadInstance(fname):
     """Load instance file."""
@@ -91,7 +74,7 @@ def ComputeDAG(s, I):
         G[i] = list(set(G[i]))
     return G
 
-def ComputeStartTimes(s, I):
+def ComputeStartTimes(s, I, isFinal=False):
     """This computes the start time of each task encoded in a chromosome of
     the genetic algorithm. The last element of the output list is the
     timespan."""
@@ -100,6 +83,8 @@ def ComputeStartTimes(s, I):
     for i in xrange(len(G)):
         if len(G[i]) == 0: C[i] = 0
         else: C[i] = max(C[k] + I.getDuration(s[k]) for k in G[i])
+    if isFinal:
+        return C,G
     return C
 
 def FormatSolution(s, C, I):
@@ -215,5 +200,6 @@ seed(SEED)
 # I is the array from the result of loading file
 I = LoadInstance(argv[-1])
 (ts, g) = Genetic(I, ps=PS, mit=IT, pc=CP, pm=MP)
-C = ComputeStartTimes(g, I)
+C,G = ComputeStartTimes(g, I, True)
+pickle.dump((C,G,I,g),open(fileName, 'wb'))
 print ts, FormatSolution(g, C, I)

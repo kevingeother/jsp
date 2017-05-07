@@ -3,8 +3,6 @@ jsp-ga
 
 Job-shop Scheduling Problem using Genetic Algorithms.
 
-Author: Joan Puigcerver i Pérez (joapuipe@upv.es)
-
 Usage
 -----
 
@@ -15,7 +13,7 @@ $ python jsp.py jsp-instance.txt
 ```
 
 The program will output the timespan of the best solution and the start time
-of each task (presented as a list of lists of integers).
+of each task (presented as a list of lists of integers) and its corresponding instance.
 
 jsp-ga has some options that can be configured to tune the performance/speed
 of the genetic algorithm.
@@ -30,6 +28,3 @@ Options:
   -c <crossover-prob> Crossover probability. Default: 1.000000
   -m <mutation-prob>  Mutation probability. Default: 0.100000
 ```
-
-If you want to know more details about the genetic algorithm used, check the
-report article and do not hesitate contact me.
