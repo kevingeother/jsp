@@ -6,9 +6,9 @@ import plotter
 import pickle
 from instance import *
 from sys import argv
-import plotter
 
-DEBUG=True
+DEBUG=False
+DEBUG=False
 # DEFAULT PARAMETERS
 SEED = 0
 # Population size
@@ -34,13 +34,11 @@ def LoadInstance(fname):
     for l in f:
         l = l.split()
         # Change to l[0] and count to 1, to make it into jobs and i[-1] to append
-        ntasks = 1
-        I.append([])
-        for j in xrange(ntasks):
-            # duration and resource requirement is appended to the array
-            dur = float(l[0])
-            res = l[1:]
-            I[-1]=(dur, res)
+        # duration and resource requirement is appended to the array
+        dur = float(l[0])
+        res = l[1:]
+        I.append((dur, res))
+    debug(I)
     return Instance(I, machineCapability)
 
 def ComputeDAG(s, I):
@@ -176,6 +174,8 @@ while i < len(argv) - 1:
         SEED = int(argv[i+1])
     elif argv[i] == '-p':
         PS = int(argv[i+1])
+    elif argv[i] == '-d':
+        DEBUG = bool(argv[i+1])
     elif argv[i] == '-i':
         IT = int(argv[i+1])
     elif argv[i] == '-c':
